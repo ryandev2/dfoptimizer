@@ -6,6 +6,10 @@
 
 <p align="center">Client-side FPS boost for <a href="https://mcdiamondfire.com">DiamondFire</a>.</p>
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ryandev2/dfoptimizer/main/docs/before-after.jpg" alt="The same codespace without and with DFOptimizer: neighbouring plots hidden, higher FPS">
+</p>
+
 Big codespaces and busy neighbouring plots are what make DiamondFire heavy to render. DFOptimizer fixes both.
 
 ## Features
