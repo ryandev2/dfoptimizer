@@ -1,0 +1,13 @@
+{
+	"required": false,
+	"package": "dev.ryanland.dfoptimizer.sodiummixin",
+	"plugin": "dev.ryanland.dfoptimizer.SodiumMixinPlugin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"LevelSliceMixin",
+		"OcclusionCullerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	}
+}

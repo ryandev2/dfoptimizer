@@ -1,0 +1,88 @@
+plugins {
+	id 'net.fabricmc.fabric-loom'
+}
+
+// DFOptimizer: lightweight client-side mod (code chests as a block model + plot filter). No automation.
+version = project.dfoptimizer_version
+group = project.maven_group
+
+base {
+	archivesName = 'dfoptimizer'
+}
+
+repositories {
+	// Sodium and Mod Menu: compileOnly, not bundled and optional at runtime
+	exclusiveContent {
+		forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+		filter { includeGroup 'maven.modrinth' }
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	compileOnly "maven.modrinth:sodium:${project.sodium_version}"
+	compileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+loom {
+	runs {
+		client {
+			runDir = 'run'
+			vmArgs "-Xmx2G"
+		}
+	}
+}
+
+// Local-only test helpers live in src/debug and are only compiled in with -PdebugTools.
+// They are never part of a release.
+if (project.hasProperty('debugTools') && file('src/debug/java').isDirectory()) {
+	sourceSets.main.java.srcDir 'src/debug/java'
+}
+
+// Local-only offline checks (src/validate): run the built-in pack through the 26.3 codecs and test
+// the code chest detection and plot geometry. Only wired up when the directory exists.
+if (file('src/validate/java').isDirectory()) {
+	sourceSets {
+		validate {
+			compileClasspath += main.compileClasspath + main.output
+			runtimeClasspath += main.runtimeClasspath + main.output
+		}
+	}
+
+	tasks.register('validatePack', JavaExec) {
+		group = 'verification'
+		description = 'Validates the built-in pack, code chest detection and plot geometry, and renders a preview'
+		classpath = sourceSets.validate.runtimeClasspath
+		mainClass = 'dev.ryanland.dfoptimizer.validate.ValidatePack'
+		def pack = file('src/main/resources/resourcepacks/static_chests')
+		def out = layout.buildDirectory.file('preview/chests.png')
+		inputs.dir(pack)
+		outputs.file(out)
+		args pack.absolutePath, out.get().asFile.absolutePath
+		// everywhere = skip the DiamondFire server check, so the wrapper can be tested without a client
+		jvmArgs '-Djava.awt.headless=true', '-Ddfoptimizer.everywhere=true'
+		// Bootstrap writes logs/ into the working directory; keep that inside build/
+		workingDir = layout.buildDirectory.dir('validate').get().asFile
+		doFirst { workingDir.mkdirs() }
+	}
+
+	tasks.named('check') { dependsOn 'validatePack' }
+}

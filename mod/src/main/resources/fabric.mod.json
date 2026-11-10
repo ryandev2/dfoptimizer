@@ -1,0 +1,42 @@
+{
+	"schemaVersion": 1,
+	"id": "dfoptimizer",
+	"version": "${version}",
+	"name": "DFOptimizer",
+	"description": "Client-side FPS boost for DiamondFire. Code chests in the codespace are drawn as a static block model instead of thousands of block entities, and the plot filter only renders the plot you are on (your codespace only in dev mode).",
+	"authors": [
+		"ryandev2"
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/mod/dfoptimizer",
+		"sources": "https://github.com/ryandev2/dfoptimizer",
+		"issues": "https://github.com/ryandev2/dfoptimizer/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/dfoptimizer/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"dev.ryanland.dfoptimizer.DFOptimizerClient"
+		],
+		"modmenu": [
+			"dev.ryanland.dfoptimizer.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		"dfoptimizer.mixins.json",
+		"dfoptimizer.sodium.mixins.json",
+		"dfoptimizer.render.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"sodium": "*",
+		"codeclient": "*",
+		"modmenu": "*"
+	}
+}

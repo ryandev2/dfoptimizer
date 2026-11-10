@@ -1,0 +1,6 @@
+{
+  "parent": "dfoptimizer:block/template_chest_left",
+  "textures": {
+    "chest": "minecraft:entity/chest/normal_left"
+  }
+}

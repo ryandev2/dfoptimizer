@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "type": "minecraft:single",
+      "resource": "minecraft:entity/chest/normal"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "minecraft:entity/chest/normal_left"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "minecraft:entity/chest/normal_right"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "minecraft:entity/chest/trapped"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "minecraft:entity/chest/trapped_left"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "minecraft:entity/chest/trapped_right"
+    }
+  ]
+}

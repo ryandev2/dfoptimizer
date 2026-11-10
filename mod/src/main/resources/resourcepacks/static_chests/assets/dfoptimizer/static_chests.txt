@@ -1,0 +1,1 @@
+Present = pack enabled. DFOptimizerClient checks for this file on every resource reload.

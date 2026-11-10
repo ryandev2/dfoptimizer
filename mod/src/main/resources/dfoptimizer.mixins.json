@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "dev.ryanland.dfoptimizer.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"BlockEntityRenderDispatcherMixin",
+		"BoundTickingBlockEntityMixin",
+		"ClientLevelParticleMixin",
+		"EntityRenderDispatcherMixin",
+		"SectionCompilerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

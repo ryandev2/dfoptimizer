@@ -1,0 +1,6 @@
+{
+  "parent": "dfoptimizer:block/template_chest_right",
+  "textures": {
+    "chest": "minecraft:entity/chest/trapped_right"
+  }
+}

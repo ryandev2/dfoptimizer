@@ -1,0 +1,62 @@
+name: Publish
+
+# Push a tag like v1.0.0 to build the mod, create a GitHub release for that tag with the jar
+# attached, and (when the MODRINTH_TOKEN secret is set) upload the same jar to Modrinth.
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # GitHub release + jar upload
+    env:
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v6.2.0
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v6.4.1
+
+      - name: Check that the tag matches the mod version
+        run: |
+          v=$(grep '^dfoptimizer_version=' gradle.properties | cut -d= -f2)
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != version $v"; exit 1; }
+
+      - run: ./gradlew :mod:build --console=plain
+
+      - name: Changelog for this version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="## $v" '$0==v{on=1;next} /^## /{on=0} on' CHANGELOG.md > release-notes.md
+          test -s release-notes.md || { echo "no '## $v' section in CHANGELOG.md"; exit 1; }
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" mod/build/libs/dfoptimizer-*.jar \
+            --title "DFOptimizer ${GITHUB_REF_NAME#v}" --notes-file release-notes.md --verify-tag
+
+      - name: Modrinth
+        if: env.MODRINTH_TOKEN != ''
+        uses: Kir-Antipov/mc-publish@v3.3.2
+        with:
+          modrinth-id: dfoptimizer
+          modrinth-token: ${{ env.MODRINTH_TOKEN }}
+          files: mod/build/libs/dfoptimizer-*.jar
+          name: DFOptimizer ${{ github.ref_name }}
+          # 'beta' for a test release; 'release' once it is confirmed
+          version-type: release
+          changelog-file: release-notes.md
+          loaders: fabric
+          game-versions: 26.3
+          java: 25
+          dependencies: |
+            fabric-api(required){modrinth:P7dR8mSH}
+            sodium(optional){modrinth:AANobbMI}
+            modmenu(optional){modrinth:mOgUt4GM}
+            codeclient(optional){modrinth:Ti8mtFQn}

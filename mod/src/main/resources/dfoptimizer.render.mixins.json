@@ -1,0 +1,11 @@
+{
+	"required": false,
+	"package": "dev.ryanland.dfoptimizer.rendermixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"RenderSectionRegionMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	}
+}

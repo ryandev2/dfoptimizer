@@ -1,0 +1,11 @@
+.gradle/
+build/
+run/
+mod/run/
+.idea/
+*.iml
+out/
+# local-only: debug tools (never part of a release), offline build checks and asset generators
+mod/src/debug/
+mod/src/validate/
+mod/tools/

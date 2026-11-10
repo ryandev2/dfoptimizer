@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v6.2.0
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v6.4.1
+      - run: ./gradlew :mod:build --console=plain
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: dfoptimizer
+          path: mod/build/libs/*.jar
