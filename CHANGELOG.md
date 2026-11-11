@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- **Plot detection without code**: plots are now also recognised by the stone outline on the codespace floor, so the
+  plot filter works on plots without any code when you join them from spawn.
+- **No flicker at the plot border**: walking into the plot border no longer shows everything around you for a
+  moment.
+
 ## 1.0.0
 
 First public release.

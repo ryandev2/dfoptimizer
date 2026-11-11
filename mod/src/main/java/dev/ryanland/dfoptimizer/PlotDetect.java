@@ -18,6 +18,9 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
  * origin + size, so its length is the plot size + 1 (51/101/301). Mega: the codespace is 300 wide,
  * so the pattern continues much further west.
  *
+ * An empty codespace has no glass, but every codespace has a stone U on its floor (see detectU),
+ * so that is tried first.
+ *
  * Searches westwards from the player, loaded chunks only. PlotFilter only uses the result when
  * the player stands inside the detected plot.
  */
@@ -53,6 +56,8 @@ final class PlotDetect {
 	}
 
 	private static final int GLASS_PER_COLUMN = 1, PERIOD = 3, COLUMNS = 6, MAX_SEARCH = 1100;
+	/** Height of the codespace floor (measured: 49); a little margin in case a node differs. */
+	private static final int FLOOR_MIN_Y = 45, FLOOR_MAX_Y = 53;
 	/**
 	 * First every 2 s for a minute (chunks still loading). After that only once the player has moved
 	 * 32 blocks: on a Mega plot the server only loads ~8 chunks around you, so the codespace only
@@ -90,8 +95,9 @@ final class PlotDetect {
 			DFOptimizerClient.LOG.info("Plot detection (player {},{}): origin {},{}, {} (strip z {}..{}, length {}, {} glass columns, attempt {})",
 					px, pz, r.originX(), r.originZ(), r.size(), r.stripMinZ(), r.stripMaxZ(), r.stripLength(), r.columnsWest(), tries);
 		} else if (tries == MAX_TRIES) {
-			DFOptimizerClient.LOG.info("Plot detection: after {} attempts no complete codespace strip west of {},{}{}", tries, px, pz,
-					r == null ? "" : String.format(" (found strip z %d..%d, but its edge is not loaded)", r.stripMinZ(), r.stripMaxZ()));
+			DFOptimizerClient.LOG.info("Plot detection: after {} attempts no complete codespace strip west of {},{}{}; glass per column from x {}: {}", tries, px, pz,
+					r == null ? "" : String.format(" (found strip z %d..%d, but its edge is not loaded)", r.stripMinZ(), r.stripMaxZ()),
+					px - 150, glassProfile(mc.level, px - 150, px + 49, pz));
 		}
 		return result;
 	}
@@ -108,7 +114,71 @@ final class PlotDetect {
 		return sb.toString();
 	}
 
+	/** The stone U first (also there in an empty codespace), then the glass layers (underground code). */
 	static Result detect(Level level, int px, int pz) {
+		Result u = detectU(level, px, pz);
+		return u != null ? u : detectGlass(level, px, pz);
+	}
+
+	/**
+	 * Every codespace has a stone outline on the floor, open towards the plot (measured on an empty
+	 * Basic plot against CodeClient): a west leg at origin - width running z origin..origin + length,
+	 * and a north and south leg from there to origin - 1. Code sits on top of it, so the floor
+	 * layer itself stays stone. Underground code can replace it; then the glass search takes over.
+	 */
+	static Result detectU(Level level, int px, int pz) {
+		for (int x = px; x >= px - MAX_SEARCH; x--) {
+			if (!loaded(level, x, pz)) return null;
+			for (int y = FLOOR_MIN_Y; y <= FLOOR_MAX_Y; y++) {
+				if (!isStone(level, x, y, pz)) continue;
+				Result r = uAt(level, x, y, pz);
+				if (r != null) return r;
+			}
+		}
+		return null;
+	}
+
+	/** (x, z) is on the west leg of a U at height y: returns the plot it belongs to, or null. */
+	private static Result uAt(Level level, int x, int y, int z) {
+		int minZ = z, maxZ = z;
+		while (true) {
+			if (!loaded(level, x, minZ - 1)) return null;
+			if (!isStone(level, x, y, minZ - 1)) break;
+			if (--minZ < z - 310) return null;
+		}
+		while (true) {
+			if (!loaded(level, x, maxZ + 1)) return null;
+			if (!isStone(level, x, y, maxZ + 1)) break;
+			if (++maxZ > z + 310) return null;
+		}
+		// length 50/100/300 (Mega: also 300, but 300 wide)
+		String size = PlotFilter.sizeFromWidth(maxZ - minZ);
+		if (size == null || size.equals("MEGA")) return null;
+		int width = legWidth(level, x, y, minZ);
+		if (width < 0 || width != legWidth(level, x, y, maxZ)) return null;
+		boolean mega = width == 300;
+		if (!mega && width != 20) return null;
+		if (mega && !size.equals("MASSIVE")) return null;
+		int originX = x + width;
+		return new Result(originX - 2, minZ, maxZ, true, true, mega ? 100 : COLUMNS);
+	}
+
+	/** Length of the stone leg eastwards from (x, z), or -1 when its end is not loaded. */
+	private static int legWidth(Level level, int x, int y, int z) {
+		int w = 0;
+		while (w <= 310) {
+			if (!loaded(level, x + w, z)) return -1;
+			if (!isStone(level, x + w, y, z)) return w;
+			w++;
+		}
+		return -1;
+	}
+
+	private static boolean isStone(Level level, int x, int y, int z) {
+		return level.getBlockState(new BlockPos(x, y, z)).is(net.minecraft.world.level.block.Blocks.STONE);
+	}
+
+	static Result detectGlass(Level level, int px, int pz) {
 		Map<Long, Integer> cache = new HashMap<>();
 		Integer last = null;
 		for (int x = px; x >= px - MAX_SEARCH; x--) {

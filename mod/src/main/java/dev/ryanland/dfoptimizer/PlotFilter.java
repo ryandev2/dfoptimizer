@@ -209,6 +209,15 @@ public final class PlotFilter {
 
 	// ---- client tick ----
 
+	/** The last plot box the player actually stood in (reset at spawn). */
+	private static View confirmed;
+	/** How far outside a confirmed plot the player may be (border push-back, knockback) before it is dropped. */
+	private static final int NEAR = 8;
+
+	private static boolean near(View v, int x, int z) {
+		return x >= v.minX() - NEAR && x <= v.maxX() + NEAR && z >= v.minZ() - NEAR && z <= v.maxZ() + NEAR;
+	}
+
 	static void tick(Minecraft mc) {
 		View next = null;
 		String state;
@@ -227,6 +236,7 @@ public final class PlotFilter {
 			var hook = debugTick;
 			if (hook != null) hook.accept(mc, p == null ? "lobby" : p.mode());
 			if (p == null) {
+				confirmed = null;
 				state = "not on a plot";
 				summary = "not on a plot";
 			} else {
@@ -271,7 +281,13 @@ public final class PlotFilter {
 				}
 				// Everything except CodeClient (border, detection, memory) only applies when you are really
 				// standing on it. Otherwise a wrong guess hides everything around you.
-				if (next != null && p.x() == null && !next.containsBlock(mc.player.getBlockX(), mc.player.getBlockZ())) {
+				int px = mc.player.getBlockX(), pz = mc.player.getBlockZ();
+				if (next != null && next.containsBlock(px, pz)) {
+					confirmed = next;
+				} else if (next != null && next.equals(confirmed) && near(next, px, pz)) {
+					// Already stood on this plot: walking into the border (DF teleports you back) does
+					// not make it a wrong guess, so keep it instead of showing everything for a moment.
+				} else if (next != null && p.x() == null) {
 					if (d != null && d != lastRejected) DFOptimizerClient.LOG.info("Plot filter: detected plot {},{} does not contain the player; glass per column from the strip: {}",
 							d.originX(), d.originZ(), PlotDetect.glassProfile(mc.level, d.lastGlassX() - 20, mc.player.getBlockX(), mc.player.getBlockZ()));
 					lastRejected = d;
